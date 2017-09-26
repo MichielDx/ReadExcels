@@ -1,0 +1,14 @@
+file extension check (xlsx, niet xls) -> eigen exception (fileloadnotsupportedexception)
+content arraylist -> hashmap
+hash van rij bijhouden (base64, ...)
+
+
+kijken of filenaam hetzelfde is
+zo nee -> gwn opslaan
+zo ja 
+	-> kijken of hash van rijen gelijk is 
+		-> zo nee 
+			-> veranderingen bekijken
+	-> kijken of er rijen in excel verwijdert zijn
+
+thymeleaf front-end maken
