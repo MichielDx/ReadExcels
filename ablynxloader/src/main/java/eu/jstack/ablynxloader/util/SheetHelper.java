@@ -28,9 +28,9 @@ public class SheetHelper {
                 columnIndex++;
             }
 
-            if (values.size() != 0) {
+            if (values.size() != 0 && values.get(values.size()-1).get("hash") == null) {
                 LinkedHashMap<String, Object> value = values.get(values.size()-1);
-                value.put("hash", Objects.hash(value.toString()));
+                value.put("hash", Objects.hashCode(value.toString()));
             }
             ++rowCount;
         }
@@ -54,11 +54,11 @@ public class SheetHelper {
                 value = cell.getBooleanCellValue();
                 break;
             case NUMERIC:
-                value = cell.getNumericCellValue();
+                value = String.valueOf(cell.getNumericCellValue());
                 break;
             default:
                 if (HSSFDateUtil.isCellDateFormatted(cell)) {
-                    value = cell.getDateCellValue();
+                    value = cell.getDateCellValue().getTime();
                 }
         }
         values.get(values.size()-1).put(keys.get(columnIndex), value);

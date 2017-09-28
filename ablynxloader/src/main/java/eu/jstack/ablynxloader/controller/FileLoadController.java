@@ -1,5 +1,6 @@
 package eu.jstack.ablynxloader.controller;
 
+import eu.jstack.ablynxloader.dto.FileLoadDTO;
 import eu.jstack.ablynxloader.exception.FileLoadNotSupportedException;
 import eu.jstack.ablynxloader.fileload.service.LoadService;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -34,8 +35,58 @@ public class FileLoadController {
         }
     }
 
-    @PatchMapping(value = "/{filename}/update", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> updateContents(@PathVariable("filename") String filename, @RequestBody ArrayList<LinkedHashMap<String, Object>> values) {
-        return null;
+    @PatchMapping(value = "/{filename}/content/update", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<?> updateContents(@PathVariable("filename") String filename, @RequestBody Object object) {
+        try {
+            ArrayList<LinkedHashMap<String, Object>> values = ((LinkedHashMap<String, ArrayList<LinkedHashMap<String, Object>>>) object).get("values");
+            FileLoadDTO fileLoadDTO = loadService.updateFileLoads(filename, values);
+            return new ResponseEntity<Object>(fileLoadDTO, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PatchMapping(value = "/{filename}/content/{hash}/update", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<?> updateContent(@PathVariable("filename") String filename, @RequestBody Object object) {
+        try {
+            LinkedHashMap<String, Object> value = ((LinkedHashMap<String, LinkedHashMap<String, Object>>) object).get("value");
+            return new ResponseEntity<Object>(loadService.update(filename, value), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(value = "/{filename}/content/insert", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<?> insertContent(@PathVariable("filename") String filename, @RequestBody Object object) {
+        try {
+            LinkedHashMap<String, Object> value = ((LinkedHashMap<String, LinkedHashMap<String, Object>>) object).get("value");
+
+            return new ResponseEntity<>(loadService.insertContent(filename, value), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @DeleteMapping(value = "/{filename}/content/{hash}/delete", produces = "application/json")
+    public ResponseEntity<?> deleteContent(@PathVariable("filename") String filename, @PathVariable("hash") Integer[] hashes) {
+        try {
+            loadService.deleteContents(filename, hashes);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(e, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping(value = "/{filename}/content", produces = "application/json")
+    public ResponseEntity<?> getContent(@PathVariable("filename") String filename) {
+        try {
+            return new ResponseEntity<>(new FileLoadDTO(loadService.getContent(filename), false), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e, HttpStatus.BAD_REQUEST);
+        }
     }
 }
