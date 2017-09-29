@@ -30,7 +30,7 @@ public class SheetHelper {
 
             if (values.size() != 0 && values.get(values.size()-1).get("hash") == null) {
                 LinkedHashMap<String, Object> value = values.get(values.size()-1);
-                value.put("hash", Objects.hashCode(value.toString()));
+                value.put("hash", (double) Objects.hashCode(value.toString()));
             }
             ++rowCount;
         }

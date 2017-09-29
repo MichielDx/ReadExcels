@@ -1,4 +1,4 @@
-function noButtonClick(){
+function noButtonClick() {
     fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/content', {
         method: 'GET',
         headers: {
@@ -12,7 +12,7 @@ function noButtonClick(){
         }
     ).then(json => {
         this.setState({
-            data:[],
+            data: [],
             changed: json.changed
         });
         this.setState({
@@ -48,8 +48,8 @@ function updateButtonClick() {
     });
 }
 
-function onAddRow(row) {
-    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/content/insert', {
+function onAddRow(sourcename, row) {
+    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/' + sourcename + '/content/insert', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
@@ -64,7 +64,11 @@ function onAddRow(row) {
         }
     ).then(json => {
         let data = this.state.data;
-        data.push(json);
+        let result = data.find(d => {
+            return d.source === sourcename;
+        });
+
+        result.content.push(json);
         this.setState({
             data: data
         })
@@ -73,8 +77,8 @@ function onAddRow(row) {
     });
 }
 
-function onDeleteRow(ids, rows) {
-    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/content/' + ids + '/delete', {
+function onDeleteRow(sourcename, ids, rows) {
+    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/'+sourcename+'/content/' + ids + '/delete', {
         method: 'DELETE',
         headers: {
             'Accept': 'application/json',
@@ -82,10 +86,22 @@ function onDeleteRow(ids, rows) {
     }).then(response => {
             if (response.status === 200) {
                 let data = this.state.data;
-                data = data.filter(value => !ids.includes(value.hash));
+                console.log(data);
+                let result = data.find(d => {
+                    return d.source === sourcename;
+                });
+                let index = data.indexOf(result);
+                let content = result.content;
+                content =content.filter(value => {
+                    return !ids.includes(value.hash);
+                });
+                console.log(content);
+                result.content = content;
+                data[index] = result;
+                console.log(data);
                 this.setState({
                     data: data,
-                    changed: undefined
+                    changed: this.state.changed
                 })
             }
         }
@@ -94,16 +110,16 @@ function onDeleteRow(ids, rows) {
     });
 }
 
-function onCellEdit(row, column, value) {
+function onCellEdit(sourcname, row, column, value) {
     let newRow = row;
     newRow[column] = value;
-    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/content/{' + row.hash + '}/update', {
+    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/'+sourcname+'/content/' + row.hash + '/update', {
         method: 'PATCH',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({value: newRow}),
+        body: JSON.stringify({values: [newRow]}),
     }).then(response => {
             if (response.status === 200) {
                 return response.json();

@@ -1,30 +1,31 @@
 package eu.jstack.ablynxloader.dto;
 
+import eu.jstack.ablynxloader.fileload.entity.Result;
+
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
 public class FileLoadDTO {
-    private ArrayList<LinkedHashMap<String, Object>> values;
-    private boolean changed;
+    private ArrayList<Result> results;
+    private ArrayList<Boolean> changed;
 
-    public FileLoadDTO(ArrayList<LinkedHashMap<String, Object>> values, boolean changed) {
-        this.values = values;
+    public FileLoadDTO(ArrayList<Result> results, ArrayList<Boolean> changed) {
+        this.results = results;
         this.changed = changed;
     }
 
-    public ArrayList<LinkedHashMap<String, Object>> getValues() {
-        return values;
+    public ArrayList<Result> getResults() {
+        return results;
     }
 
-    public void setValues(ArrayList<LinkedHashMap<String, Object>> values) {
-        this.values = values;
+    public void setResults(ArrayList<Result> results) {
+        this.results = results;
     }
 
-    public boolean isChanged() {
+    public ArrayList<Boolean> getChanged() {
         return changed;
     }
 
-    public void setChanged(boolean changed) {
+    public void setChanged(ArrayList<Boolean> changed) {
         this.changed = changed;
     }
 }

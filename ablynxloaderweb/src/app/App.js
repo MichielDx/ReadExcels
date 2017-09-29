@@ -28,7 +28,7 @@ class App extends Component {
             return response.json()
         }).then(json => {
             this.setState({
-                data:json.values,
+                data:json.results,
                 changed:json.changed,
                 filename:data.name,
                 showTable: true

@@ -10,12 +10,12 @@ public class FileLoad {
     private String id;
     private String filename;
     private LinkedHashMap<String, Object> metaData;
-    private ArrayList<LinkedHashMap<String, Object>> content;
+    private ArrayList<Result> results;
 
-    public FileLoad(String filename, LinkedHashMap<String, Object> metaData, ArrayList<LinkedHashMap<String, Object>> content) {
+    public FileLoad(String filename, LinkedHashMap<String, Object> metaData, ArrayList<Result> results) {
         this.filename = filename;
         this.metaData = metaData;
-        this.content = content;
+        this.results = results;
     }
 
     public FileLoad(String filename) {
@@ -41,7 +41,7 @@ public class FileLoad {
         return metaData;
     }
 
-    public ArrayList<LinkedHashMap<String, Object>> getContent() {
-        return content;
+    public ArrayList<Result> getResults() {
+        return results;
     }
 }
