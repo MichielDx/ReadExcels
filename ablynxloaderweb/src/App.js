@@ -13,7 +13,7 @@ class App extends Component {
             changed: false,
             filename: "",
             data: []
-        }
+        };
     }
 
     onDrop(files) {
@@ -21,14 +21,13 @@ class App extends Component {
         let formData = new FormData();
         formData.append("name", data.name);
         formData.append("file", data);
-        let temp = this;
         fetch('http://localhost:8080/api/fileload/upload', {
             method: 'POST',
             body: formData,
         }).then(function (response) {
             return response.json()
-        }).then(function (json) {
-            temp.setState({
+        }).then(json => {
+            this.setState({
                 data:json.values,
                 changed:json.changed,
                 filename:data.name,

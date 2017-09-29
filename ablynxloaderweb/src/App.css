@@ -48,6 +48,6 @@ section {
 
 .dropzone > div{
   text-align: center;
-  height: 100vh !important;
+  height: 50vh !important;
   width: 100vh !important;
 }
