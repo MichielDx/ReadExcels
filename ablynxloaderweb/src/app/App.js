@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
 import './App.css';
-import '../node_modules/react-bootstrap-table/dist/react-bootstrap-table-all.min.css';
+import '../../node_modules/react-bootstrap-table/dist/react-bootstrap-table-all.min.css';
 import Dropzone from 'react-dropzone'
-import Table from './Table'
+import Table from '../component/Table'
 
 class App extends Component {
 

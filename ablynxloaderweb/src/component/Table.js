@@ -1,9 +1,9 @@
 import React, {Component} from 'react';
-import './App.css';
-import '../node_modules/react-bootstrap-table/dist/react-bootstrap-table-all.min.css';
+import '../app/App.css';
+import '../../node_modules/react-bootstrap-table/dist/react-bootstrap-table-all.min.css';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import {Button} from "react-bootstrap";
-import {cellEditProp, selectRowProp, updateButtonClick, onAddRow, onCellEdit, onDeleteRow, noButtonClick} from './TableHelper'
+import {cellEditProp, selectRowProp, updateButtonClick, onAddRow, onCellEdit, onDeleteRow, noButtonClick} from '../helper/TableHelper'
 
 class Table extends Component {
 
@@ -38,7 +38,7 @@ class Table extends Component {
         let tableData = [];
         for (let propertyName in mostProps) {
             if (propertyName === "hash") {
-                tableData.push(<TableHeaderColumn isKey hidden hiddenOnInsert export={false} key={propertyName}
+                tableData.push(<TableHeaderColumn searchable={false} isKey hidden hiddenOnInsert export={false} key={propertyName}
                                                   dataField={propertyName}>{propertyName}</TableHeaderColumn>)
             } else {
                 tableData.push(<TableHeaderColumn searchable={true} key={propertyName}
@@ -53,7 +53,7 @@ class Table extends Component {
                 <div>
                     <h3>We detected that these rows changed in your file. Would you like to update them?</h3>
                     <Button onClick={updateButtonClick.bind(this)} bsStyle="primary">Update</Button>
-                    <Button onClick={noButtonClick.bind(this)} bsStyle="secondary">No</Button>
+                    <Button onClick={noButtonClick.bind(this)}>No</Button>
                 </div>;
             table = <BootstrapTable replace={true}
                 data={this.state.data}
@@ -70,7 +70,7 @@ class Table extends Component {
                 remote={true}
                 insertRow={true}
                 deleteRow={true}
-                search={true}
+                search
                 exportCSV={true}
                 striped hover>
                 {tableData}

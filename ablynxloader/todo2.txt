@@ -1,0 +1,7 @@
+lijst van contents -> results -> source (tabelnaame/sheet), content
+final2 maken
+
+config op basis van tags velden inlezen
+
+save knop ipv 1 op 1 edit
+ of undo (events in databank bijhouden)
