@@ -80,12 +80,12 @@ public class FileLoadController {
         }
     }
 
-    /*@GetMapping(value = "/{filename}/content", produces = "application/json")
+    @GetMapping(value = "/{filename}/content", produces = "application/json")
     public ResponseEntity<?> getContent(@PathVariable("filename") String filename) {
         try {
-            return new ResponseEntity<>(new FileLoadDTO(loadService.getContent(filename), false), HttpStatus.OK);
+            return new ResponseEntity<>(loadService.getByFilename(filename), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e, HttpStatus.BAD_REQUEST);
         }
-    }*/
+    }
 }

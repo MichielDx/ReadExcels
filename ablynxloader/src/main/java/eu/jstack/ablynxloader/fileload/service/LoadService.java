@@ -1,7 +1,9 @@
 package eu.jstack.ablynxloader.fileload.service;
 
 import com.google.gson.Gson;
+import com.mongodb.BasicDBObject;
 import eu.jstack.ablynxloader.dto.FileLoadDTO;
+import eu.jstack.ablynxloader.exception.FileLoadNotFoundException;
 import eu.jstack.ablynxloader.exception.FileLoadNotSupportedException;
 import eu.jstack.ablynxloader.fileload.entity.FileLoad;
 import eu.jstack.ablynxloader.fileload.entity.Result;
@@ -24,9 +26,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.script.ExecutableMongoScript;
-import org.springframework.data.mongodb.core.script.NamedMongoScript;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -82,7 +84,7 @@ public class LoadService {
         return new FileLoadDTO(updatedValues, false);
     }*/
 
-    /*public LinkedHashMap<String, Object> getByHash(String filename, Integer hash) {
+    /*public LinkedHashMap<String, Object> getByHash(String filename, Integer hash, String sourcename) {
         BasicQuery query = new BasicQuery("{filename: '" + filename + "', content: { $elemMatch: { hash: " + hash + " } } }", "{ 'filename' : true , 'metaData' : true , 'content.$' : true}");
         FileLoad fileLoad = mongoTemplate.findOne(query, FileLoad.class);
         if (fileLoad != null)
@@ -95,22 +97,18 @@ public class LoadService {
         for (LinkedHashMap<String, Object> value : values) {
             Integer hash = (Integer) value.get("hash");
             value.remove("hash");
-            value.put("hash", Objects.hashCode(values.toString()));/*
+            value.put("hash", Objects.hashCode(value.toString()));/*
             BasicQuery query = new BasicQuery("{filename: '" + filename + "'}");
             Update update = new Update();
             update.set("results.$[i].content.$[j]", value);
             mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().upsert(true), FileLoad.class);*/
             Gson gson = new Gson();
             ScriptOperations scriptOps = mongoTemplate.scriptOps();
-                ExecutableMongoScript echoScript = new ExecutableMongoScript("db.getCollection('fileLoad').findAndModify({query:{ \"filename\" : '"+filename+"'}, update:{ \"$set\" : { \"results.$[i].content.$[j]\" : "+gson.toJson(value)+"}},arrayFilters:  [{\"i.source\": '"+sourcename+"'}, {\"j.hash\":"+hash+"}]})");
-            scriptOps.execute(echoScript, "directly execute script");
+            ExecutableMongoScript updateScript = new ExecutableMongoScript("db.getCollection('fileLoad').findAndModify({query:{ \"filename\" : '" + filename + "'}, update:{ \"$set\" : { \"results.$[i].content.$[j]\" : " + gson.toJson(value) + "}},arrayFilters:  [{\"i.source\": '" + sourcename + "'}, {\"j.hash\":" + hash + "}]})");
+            scriptOps.execute(updateScript);
 
-            scriptOps.register(new NamedMongoScript("echo", echoScript));
-            scriptOps.call("echo", "execute script via name");
-
-            Integer hash1 = (Integer) value.get("hash");
-
-            //updatedValues.add(getByHash(filename, hash1));
+            //Integer hash1 = (Integer) value.get("hash");
+            //updatedValues.add(getByHash(filename, hash1, sourcename));
         }
         return updatedValues;
     }
@@ -162,7 +160,9 @@ public class LoadService {
     private boolean valuesChanged(ArrayList<Result> changedValues, ArrayList<Boolean> changedList) {
         boolean changed = false;
         for (Result changedValue : changedValues) {
-            changed = changedValue.getContent().size() != 0;
+            if (!changed) {
+                changed = changedValue.getContent().size() != 0;
+            }
             changedList.add(changed);
         }
         return changed;
@@ -174,9 +174,12 @@ public class LoadService {
                 int index = fileLoad.getResults().indexOf(result);
                 changedValues.add(new Result(result.getSource()));
                 ArrayList<LinkedHashMap<String, Object>> existingValues = result.getContent();
-                ArrayList<LinkedHashMap<String, Object>> newValues = values.get(fileLoad.getResults().indexOf(result)).getContent();
+                ArrayList<LinkedHashMap<String, Object>> newValues = values.get(fileLoad.getResults().indexOf(result)).getContent();    
                 for (int i = 0; i < existingValues.size(); i++) {
-                    if (newValues.size() == i) break;
+                    if (newValues.size() == i) {
+                        changedValues.get(index).getContent().addAll(existingValues.subList(newValues.size(), existingValues.size()));
+                        break;
+                    }
 
                     double existingHash = (double) existingValues.get(i).get("hash");
 
@@ -185,11 +188,11 @@ public class LoadService {
                         newValues.get(i).replace("hash", existingHash);
                         changedValues.get(index).getContent().add(newValues.get(i));
                     }
-                    if (newValues.size() > existingValues.size()) {
-                        changedValues.get(index).getContent().addAll(newValues.subList(existingValues.size(), newValues.size()));
-                    }
-                }
 
+                }
+                if (newValues.size() > existingValues.size()) {
+                    changedValues.get(index).getContent().addAll(newValues.subList(existingValues.size(), newValues.size()));
+                }
             }
 
         }
@@ -211,11 +214,11 @@ public class LoadService {
         return results;
     }
 
-    /*public ArrayList<LinkedHashMap<String, Object>> getContent(String filename) throws FileLoadNotFoundException {
+    public FileLoadDTO getByFilename(String filename) throws FileLoadNotFoundException {
         FileLoad fileLoad = fileLoadRepository.findByFilename(filename);
         if (fileLoad != null) {
-            return fileLoad.getContent();
+            return new FileLoadDTO(fileLoad.getResults(), new ArrayList<>());
         }
         throw new FileLoadNotFoundException("FileLoad with name: " + filename + " was not found.");
-    }*/
+    }
 }

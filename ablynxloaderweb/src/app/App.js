@@ -55,9 +55,10 @@ class App extends Component {
         }
         return (
             <div>
+                <div width="100vh"><img className="logo" src={require("../images/ablynx_logo_large.gif")}/></div>
                 {component}
             </div>
-        );
+        )
     }
 }
 

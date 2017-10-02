@@ -16,8 +16,48 @@ function noButtonClick() {
             changed: json.changed
         });
         this.setState({
-            data: json.values
+            data: json.results
         })
+    }).catch(function (ex) {
+        console.log('parsing failed', ex)
+    });
+}
+
+function update(sourcename) {
+    let update = this.state.updateList[sourcename];
+    if (!update) return;
+    let hashes = update.map(content => content.hash);
+    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/' + sourcename + '/content/' + hashes + '/update', {
+        method: 'PATCH',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({values: update}),
+    }).then(response => {
+            if (response.status === 200) {
+                return response.json();
+            }
+            throw new Error(response.statusText);
+        }
+    ).then(json => {
+        let updateList = this.state.updateList;
+        let hashes = updateList[sourcename].map(elem => elem.hash);
+        updateList[sourcename] = [];
+
+        let result = this.state.data.filter(dat => dat.source === sourcename)[0];
+        result.content = result.content.filter(cont => !hashes.includes(cont.hash));
+
+        let data = this.state.data;
+        let index = data.findIndex(dat => dat.source === sourcename);
+        if (index !== -1)
+            data[index] = result;
+
+        this.setState({
+            updateList: updateList,
+            data: data
+        });
+        console.log(this.state.data);
     }).catch(function (ex) {
         console.log('parsing failed', ex)
     });
@@ -78,7 +118,7 @@ function onAddRow(sourcename, row) {
 }
 
 function onDeleteRow(sourcename, ids, rows) {
-    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/'+sourcename+'/content/' + ids + '/delete', {
+    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/' + sourcename + '/content/' + ids + '/delete', {
         method: 'DELETE',
         headers: {
             'Accept': 'application/json',
@@ -92,7 +132,7 @@ function onDeleteRow(sourcename, ids, rows) {
                 });
                 let index = data.indexOf(result);
                 let content = result.content;
-                content =content.filter(value => {
+                content = content.filter(value => {
                     return !ids.includes(value.hash);
                 });
                 console.log(content);
@@ -110,34 +150,25 @@ function onDeleteRow(sourcename, ids, rows) {
     });
 }
 
-function onCellEdit(sourcname, row, column, value) {
-    let newRow = row;
-    newRow[column] = value;
-    fetch('http://localhost:8080/api/fileload/' + this.state.filename + '/source/'+sourcname+'/content/' + row.hash + '/update', {
-        method: 'PATCH',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({values: [newRow]}),
-    }).then(response => {
-            if (response.status === 200) {
-                return response.json();
-            }
-            throw new Error(response.statusText);
-        }
-    ).then(json => {
-        let index = this.state.data.indexOf(row);
-        let data = this.state.data;
-        data[index] = json;
-        this.setState({
-            data: data
-        });
-    }).catch(function (ex) {
-        console.log('parsing failed', ex)
+function onCellEdit(sourcename, row, column, value) {
+    let data = this.state.data;
+    let updateList = this.state.updateList;
+    let result = this.state.data.filter(dat => dat.source === sourcename)[0];
+    let rowIndex = result.content.indexOf(row);
+    let resultIndex = data.indexOf(result);
+    row[column] = value;
+    result.content[rowIndex] = row;
+    data[resultIndex] = result;
+
+    if (updateList[sourcename]) {
+        updateList[sourcename] = [...updateList[sourcename], row];
+    } else {
+        updateList[sourcename] = [row];
+    }
+    this.setState({
+        data: data,
+        updateList: updateList
     });
-
-
 }
 
 const cellEditProp = {
@@ -149,4 +180,13 @@ const selectRowProp = {
     mode: 'checkbox'
 };
 
-export {cellEditProp, selectRowProp, updateButtonClick, onAddRow, onCellEdit, onDeleteRow, noButtonClick}
+export {
+    cellEditProp,
+    selectRowProp,
+    updateButtonClick,
+    onAddRow,
+    onCellEdit,
+    onDeleteRow,
+    noButtonClick,
+    update
+}
