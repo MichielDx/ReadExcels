@@ -12,6 +12,7 @@ import {
     noButtonClick,
     update
 } from '../helper/TableHelper'
+const moment = require('moment');
 
 class Table extends Component {
     constructor(props) {
@@ -23,6 +24,11 @@ class Table extends Component {
             csvFileName: props.filename.split('.')[0] + ".csv",
             updateList: {}
         };
+    }
+
+
+    dateFormatter(cell, row) {
+        return moment(cell).format('MM/DD/YYYY');
     }
 
     render() {
@@ -39,6 +45,10 @@ class Table extends Component {
                     tableData.push(<TableHeaderColumn searchable={false} isKey hidden hiddenOnInsert export={false}
                                                       key={propertyName}
                                                       dataField={propertyName}>{propertyName}</TableHeaderColumn>)
+                } else if (propertyName === "date") {
+                    tableData.push(<TableHeaderColumn searchable={true} key={propertyName}
+                                                      dataField={propertyName}
+                                                      dataFormat={this.dateFormatter}>{propertyName}</TableHeaderColumn>)
                 } else {
                     tableData.push(<TableHeaderColumn searchable={true} key={propertyName}
                                                       dataField={propertyName}>{propertyName}</TableHeaderColumn>)
@@ -65,7 +75,7 @@ class Table extends Component {
             if (this.state.changed[this.state.data.indexOf(result)] === true) {
                 changed = true;
                 changedForm =
-                    <div style={{marginBottom:"5px"}}>
+                    <div style={{marginBottom: "5px"}}>
                         <h3>We detected that these rows changed in this sheet. Would you like to update them?</h3>
                         <Button onClick={update.bind(this, result.source, "ok")} bsStyle="primary">Update</Button>
                     </div>;
@@ -77,7 +87,7 @@ class Table extends Component {
                 </BootstrapTable>;
             } else if (this.state.data.length !== 0) {
                 if (this.state.updateList[result.source] && this.state.updateList[result.source].length !== 0) {
-                    saveChangesButton = <div style={{marginBottom:"5px"}}>
+                    saveChangesButton = <div style={{marginBottom: "5px"}}>
                         <h2>We noticed some changes</h2>
                         <Button onClick={update.bind(this, result.source)}>Save changes</Button>
                         <br/>
@@ -109,8 +119,9 @@ class Table extends Component {
         }
 
         let doNotUpdateButton;
-        if(changed){
-            doNotUpdateButton = <Button bsStyle="info" onClick={noButtonClick.bind(this)}>Don't update anything</Button>;
+        if (changed) {
+            doNotUpdateButton =
+                <Button bsStyle="info" onClick={noButtonClick.bind(this)}>Don't update anything</Button>;
         }
 
         return (
