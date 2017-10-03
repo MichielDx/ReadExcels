@@ -1,7 +1,6 @@
 package eu.jstack.ablynxloader.fileload.service;
 
 import com.google.gson.Gson;
-import com.mongodb.BasicDBObject;
 import eu.jstack.ablynxloader.dto.FileLoadDTO;
 import eu.jstack.ablynxloader.exception.FileLoadNotFoundException;
 import eu.jstack.ablynxloader.exception.FileLoadNotSupportedException;
@@ -28,7 +27,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.core.script.ExecutableMongoScript;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -61,8 +59,15 @@ public class LoadService {
     }*/
 
     public LinkedHashMap<String, Object> insertContent(String filename, String sourcename, LinkedHashMap<String, Object> value) {
+        String ogHash = (String) value.get("originalhash");
+        Integer originalhash = null;
+        if (!ogHash.isEmpty())
+            originalhash = Integer.parseInt(ogHash);
         value.remove("hash");
-        value.put("hash", Objects.hashCode(value.toString()));
+        value.remove("originalhash");
+        value.put("hash", Objects.hash(value, sourcename, filename));
+        value.put("originalhash", originalhash == null ? value.get("hash") : originalhash);
+
         BasicQuery query = new BasicQuery("{filename: '" + filename + "', results: { $elemMatch: { source: '" + sourcename + "' } } }");
         Update update = new Update();
         update.push("results.$.content", value);
@@ -84,31 +89,42 @@ public class LoadService {
         return new FileLoadDTO(updatedValues, false);
     }*/
 
-    /*public LinkedHashMap<String, Object> getByHash(String filename, Integer hash, String sourcename) {
-        BasicQuery query = new BasicQuery("{filename: '" + filename + "', content: { $elemMatch: { hash: " + hash + " } } }", "{ 'filename' : true , 'metaData' : true , 'content.$' : true}");
+    public boolean getByHash(Integer hash) {
+        BasicQuery query = new BasicQuery("{\"results.content.hash\":" + hash + "}", "{'filename':1}");
         FileLoad fileLoad = mongoTemplate.findOne(query, FileLoad.class);
-        if (fileLoad != null)
-            return fileLoad.getContent().get(0);
-        return null;
-    }*/
+        return fileLoad == null;
+    }
+
+    public boolean getByOriginalHash(Integer hash) {
+        BasicQuery query = new BasicQuery("{\"results.content.originalhash\":" + hash + "}", "{'filename':1}");
+        FileLoad fileLoad = mongoTemplate.findOne(query, FileLoad.class);
+        return fileLoad == null;
+    }
 
     public Object update(String filename, String sourcename, ArrayList<LinkedHashMap<String, Object>> values) {
         ArrayList<LinkedHashMap<String, Object>> updatedValues = new ArrayList<>();
         for (LinkedHashMap<String, Object> value : values) {
-            Integer hash = (Integer) value.get("hash");
+            Integer originalhash = (Integer) value.get("originalhash");
             value.remove("hash");
-            value.put("hash", Objects.hashCode(value.toString()));/*
-            BasicQuery query = new BasicQuery("{filename: '" + filename + "'}");
-            Update update = new Update();
-            update.set("results.$[i].content.$[j]", value);
-            mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options().upsert(true), FileLoad.class);*/
-            Gson gson = new Gson();
-            ScriptOperations scriptOps = mongoTemplate.scriptOps();
-            ExecutableMongoScript updateScript = new ExecutableMongoScript("db.getCollection('fileLoad').findAndModify({query:{ \"filename\" : '" + filename + "'}, update:{ \"$set\" : { \"results.$[i].content.$[j]\" : " + gson.toJson(value) + "}},arrayFilters:  [{\"i.source\": '" + sourcename + "'}, {\"j.hash\":" + hash + "}]})");
-            scriptOps.execute(updateScript);
+            value.remove("originalhash");
+            value.put("hash", Objects.hash(value, sourcename, filename));
+            value.put("originalhash", originalhash);
 
-            //Integer hash1 = (Integer) value.get("hash");
-            //updatedValues.add(getByHash(filename, hash1, sourcename));
+            //TODO store original hash?
+            if (getByOriginalHash(originalhash)) {
+                BasicQuery query = new BasicQuery("{filename: '" + filename + "', results: { $elemMatch: { source: '" + sourcename + "' } } }");
+                Update update = new Update();
+                update.push("results.$.content", value);
+                mongoTemplate.findAndModify(query, update, FindAndModifyOptions.options(), FileLoad.class);
+            } else {
+                Gson gson = new Gson();
+                ScriptOperations scriptOps = mongoTemplate.scriptOps();
+                ExecutableMongoScript updateScript = new ExecutableMongoScript("db.getCollection('fileLoad').findAndModify({query:{ \"filename\" : '" + filename + "'}, update:{ \"$set\" : { \"results.$[i].content.$[j]\" : " + gson.toJson(value) + "}},arrayFilters:  [{\"i.source\": '" + sourcename + "'}, {\"j.originalhash\":" + originalhash + "}]})");
+                scriptOps.execute(updateScript);
+            }
+
+            /*Integer hash1 = (Integer) value.get("hash");
+            updatedValues.add(getByHash(filename, hash1, sourcename));*/
         }
         return updatedValues;
     }
@@ -131,7 +147,7 @@ public class LoadService {
     }
 
     private FileLoadDTO createFileLoad(String filename, InputStream inputStream, XSSFWorkbook workbook, FileLoad fileLoad) throws IOException, ParseException {
-        ArrayList<Result> results = readFile(inputStream, workbook);
+        ArrayList<Result> results = readFile(inputStream, workbook, filename);
         ArrayList<Result> changedValues = new ArrayList<>();
         ArrayList<Boolean> changedList = new ArrayList<>();
 
@@ -169,7 +185,18 @@ public class LoadService {
     }
 
     private void verifyHashes(FileLoad fileLoad, ArrayList<Result> changedValues, ArrayList<Result> values) {
-        if (fileLoad != null) {
+        if (fileLoad == null) return;
+        for (Result result : values) {
+            int index = values.indexOf(result);
+            changedValues.add(new Result(result.getSource()));
+            for (LinkedHashMap<String, Object> content : result.getContent()) {
+                if (getByHash((Integer) content.get("hash"))) {
+                    changedValues.get(index).getContent().add(content);
+                }
+            }
+        }
+
+        /*if (fileLoad != null) {
             for (Result result : fileLoad.getResults()) {
                 int index = fileLoad.getResults().indexOf(result);
                 changedValues.add(new Result(result.getSource()));
@@ -195,10 +222,10 @@ public class LoadService {
                 }
             }
 
-        }
+        }*/
     }
 
-    private ArrayList<Result> readFile(InputStream inputStream, Workbook workbook) throws IOException, ParseException {
+    private ArrayList<Result> readFile(InputStream inputStream, Workbook workbook, String filename) throws IOException, ParseException {
         ArrayList<LinkedHashMap<String, Object>> values;
         ArrayList<Result> results = new ArrayList<>();
 
@@ -207,7 +234,7 @@ public class LoadService {
         while (sheets.hasNext()) {
             Sheet sheet = sheets.next();
             values = new ArrayList<>();
-            SheetHelper.getData(sheet, values);
+            SheetHelper.getData(sheet, values, filename);
             results.add(new Result(sheet.getSheetName(), values));
         }
 

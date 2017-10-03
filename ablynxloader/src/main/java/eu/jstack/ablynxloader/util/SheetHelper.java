@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 
 public class SheetHelper {
-    public static void getData(Sheet firstSheet, ArrayList<LinkedHashMap<String, Object>> values) {
+    public static void getData(Sheet firstSheet, ArrayList<LinkedHashMap<String, Object>> values, String filename) {
         ArrayList<String> keys = new ArrayList<>();
         int rowCount = 0;
 
@@ -30,7 +30,8 @@ public class SheetHelper {
 
             if (values.size() != 0 && values.get(values.size()-1).get("hash") == null) {
                 LinkedHashMap<String, Object> value = values.get(values.size()-1);
-                value.put("hash", (double) Objects.hashCode(value.toString()));
+                value.put("hash", Objects.hash(value, firstSheet.getSheetName(),filename));
+                value.put("originalhash",value.get("hash"));
             }
             ++rowCount;
         }

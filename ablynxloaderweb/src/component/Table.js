@@ -12,6 +12,7 @@ import {
     noButtonClick,
     update
 } from '../helper/TableHelper'
+
 const moment = require('moment');
 
 class Table extends Component {
@@ -43,6 +44,10 @@ class Table extends Component {
                 let propertyName = props[j];
                 if (propertyName === "hash") {
                     tableData.push(<TableHeaderColumn searchable={false} isKey hidden hiddenOnInsert export={false}
+                                                      key={propertyName}
+                                                      dataField={propertyName}>{propertyName}</TableHeaderColumn>)
+                } else if (propertyName === "originalhash") {
+                    tableData.push(<TableHeaderColumn searchable={false} hidden hiddenOnInsert export={false}
                                                       key={propertyName}
                                                       dataField={propertyName}>{propertyName}</TableHeaderColumn>)
                 } else if (propertyName === "date") {
@@ -77,7 +82,7 @@ class Table extends Component {
                 changedForm =
                     <div style={{marginBottom: "5px"}}>
                         <h3>We detected that these rows changed in this sheet. Would you like to update them?</h3>
-                        <Button onClick={update.bind(this, result.source, "ok")} bsStyle="primary">Update</Button>
+                        <Button onClick={update.bind(this, result.source, true)} bsStyle="primary">Update</Button>
                     </div>;
                 table = <BootstrapTable ref="table" replace={true}
                                         data={result.content}
@@ -89,7 +94,7 @@ class Table extends Component {
                 if (this.state.updateList[result.source] && this.state.updateList[result.source].length !== 0) {
                     saveChangesButton = <div style={{marginBottom: "5px"}}>
                         <h2>We noticed some changes</h2>
-                        <Button onClick={update.bind(this, result.source)}>Save changes</Button>
+                        <Button onClick={update.bind(this, result.source, false)}>Save changes</Button>
                         <br/>
                     </div>
                 }
@@ -151,7 +156,6 @@ function onRowSelect(sourcename, row, isSelected) {
     this.setState({
         updateList: updateList
     });
-    console.log(updateList);
     return isSelected;
 }
 
@@ -167,7 +171,6 @@ function onSelectAll(sourcename, isSelected, currentDisplayAndSelectedData) {
             }
         });
     }
-    console.log(updateList);
     this.setState({
         updateList: updateList
     });

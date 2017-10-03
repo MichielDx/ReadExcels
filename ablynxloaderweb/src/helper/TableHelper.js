@@ -23,7 +23,7 @@ function noButtonClick() {
     });
 }
 
-function update(sourcename) {
+function update(sourcename, updateData) {
     let update = this.state.updateList[sourcename];
     if (!update) return;
     let hashes = update.map(content => content.hash);
@@ -45,19 +45,29 @@ function update(sourcename) {
         let hashes = updateList[sourcename].map(elem => elem.hash);
         updateList[sourcename] = [];
 
-        let result = this.state.data.filter(dat => dat.source === sourcename)[0];
-        result.content = result.content.filter(cont => !hashes.includes(cont.hash));
-
         let data = this.state.data;
-        let index = data.findIndex(dat => dat.source === sourcename);
-        if (index !== -1)
-            data[index] = result;
+        if (updateData === true) {
+            let result = this.state.data.filter(dat => dat.source === sourcename)[0];
+            result.content = result.content.filter(cont => !hashes.includes(cont.hash));
 
+
+            let index = data.findIndex(dat => dat.source === sourcename);
+            if (index !== -1)
+                data[index] = result;
+        }
         this.setState({
             updateList: updateList,
             data: data
         });
-        console.log(this.state.data);
+
+        let count = 0;
+        data.forEach(temp => {
+            count += temp.content.length;
+        });
+        if (count === 0) {
+            noButtonClick.bind(this)();
+        }
+
     }).catch(function (ex) {
         console.log('parsing failed', ex)
     });
@@ -126,7 +136,6 @@ function onDeleteRow(sourcename, ids, rows) {
     }).then(response => {
             if (response.status === 200) {
                 let data = this.state.data;
-                console.log(data);
                 let result = data.find(d => {
                     return d.source === sourcename;
                 });
@@ -135,10 +144,8 @@ function onDeleteRow(sourcename, ids, rows) {
                 content = content.filter(value => {
                     return !ids.includes(value.hash);
                 });
-                console.log(content);
                 result.content = content;
                 data[index] = result;
-                console.log(data);
                 this.setState({
                     data: data,
                     changed: this.state.changed
